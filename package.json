@@ -1,0 +1,8 @@
+{
+   "dependencies": {
+      "nightmare": "~2.9.1"
+   },
+   "scripts": {
+      "test": "xvfb-run -a node PDFGeneratorTest.js"
+   }
+}
