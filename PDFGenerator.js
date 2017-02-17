@@ -5,7 +5,6 @@ var PDFGenerator = function() {
 };
 PDFGenerator.prototype.makeNightmare = function( nightmareOptions ) {
 	let Nightmare = require('nightmare');
-	console.log("Making nightmare instance", nightmareOptions);
 	return new Nightmare(nightmareOptions);
 };
 
@@ -75,18 +74,11 @@ PDFGenerator.prototype.convertFileToPdf = function( htmlFilenameOrUrl, pdfFilena
 	return this.filenameOrUrlToUrl(htmlFilenameOrUrl).then( (htmlUrl) => {
 		let nightmare = options.nightmare || this.makeNightmare(nightmareOptions);
 		
-		console.log("Hey, ho, starting up nightmare on "+htmlUrl+", waiting for selector '"+waitForDomSelector+"'");
-		
 		let prom = nightmare.goto(htmlUrl)
 			.wait(waitForDomSelector)
 			.pdf(pdfFilename, pdfOptions)
 			.end();
-		console.log("Okay, queued nightmare commands");
-		prom = prom.then( () => {
-			console.log("Holy crap it ran");
-		});
 		if( checkOutputFile ) {
-			console.log("will chx output");
 			prom = prom.then( () => this.assertNonEmptyFile(pdfFilename) );
 		}
 		return prom.then( () => pdfFilename );
