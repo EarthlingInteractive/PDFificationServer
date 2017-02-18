@@ -25,13 +25,16 @@ function pipe( readStream, writeStream ) {
 }
 
 function pipeToFile( stream, file ) {
-	console.log("Piping stuff to "+file);
 	let writeStream = fs.createWriteStream(file)
-	return pipe( stream, writeStream );
+	return pipe( stream, writeStream ).then( () => new Promise( (resolve,reject) =>
+		fs.stat(file, (err, stat) => {
+			if( err ) reject(new Error("Failed tp create "+file+"; "+err.message));
+			else resolve();
+		})
+	));
 }
 
 function pipeFromFile( file, stream ) {
-	console.log("Piping stuff from "+file);
 	let readStream = fs.createReadStream(file);
 	return pipe( readStream, stream );
 }
@@ -42,9 +45,7 @@ function handlePdfifyRequest(req,res) {
 	let tempOutputFile = tempBase+".pdf";
 	return pipeToFile(req, tempInputFile).then( () => {
 		console.log("Converting "+tempInputFile+" to "+tempOutputFile);
-		return new PDFGenerator().convertFileToPdf(tempInputFile, tempOutputFile).then( () => {
-			console.log("PDF conversion done!");
-		});
+		return new PDFGenerator().convertFileToPdf(tempInputFile, tempOutputFile);
 	}).then( () => {
 		res.writeHead(200, {'Content-Type': 'application/pdf'});
 		return pipeFromFile(tempOutputFile, res).catch( (err) => {
@@ -57,9 +58,14 @@ function handlePdfifyRequest(req,res) {
 let server = http.createServer( (req,res) => {
 	if( req.method == 'POST' && req.url == '/pdfify' ) {
 		handlePdfifyRequest(req,res).catch( (err) => {
+			console.error("Request to "+req.method+" "+req.url+" failed; sending 500: "+err.stack+"");
 			res.writeHead(500, {'Content-Type': 'text/plain'});
-			res.end(error.trace)
-		});
+			res.end(err.stack);
+		}).then( () => {
+			res.end(); // Make sure!
+		}).catch( (err) => {
+			console.error("Error sending response? "+err.stack);
+		})
 	} else {
 		res.writeHead(404, {'Content-Type': 'text/plain'});
 		res.end("Only POST /pdfify is supported (you did "+req.method+" "+req.url+")");
