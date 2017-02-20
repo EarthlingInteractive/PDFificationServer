@@ -19,3 +19,6 @@ run-tests: node_modules
 
 run-server: node_modules
 	npm start
+
+docker-image: clean
+	docker build .
