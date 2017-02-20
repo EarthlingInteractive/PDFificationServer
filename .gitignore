@@ -1,3 +1,5 @@
+/.docker-build.log
+/docker-image-id
 /hello.pdf
 /temp
 /node_modules

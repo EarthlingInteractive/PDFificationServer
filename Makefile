@@ -20,5 +20,8 @@ run-tests: node_modules
 run-server: node_modules
 	npm start
 
-docker-image: clean
-	docker build .
+docker-image-id: clean
+	docker build . | tee .docker-build.log
+	tail -n 1 .docker-build.log | sed -e 's/Successfully built //' > $@
+
+docker-image: docker-image-id
