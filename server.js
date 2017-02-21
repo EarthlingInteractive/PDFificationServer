@@ -71,4 +71,6 @@ let server = http.createServer( (req,res) => {
 		res.end("Only POST /pdfify is supported (you did "+req.method+" "+req.url+")");
 	}
 });
-server.listen(port);
+server.listen( port, ()=> {
+	console.log(`pdfification running on ${port}`);
+});
