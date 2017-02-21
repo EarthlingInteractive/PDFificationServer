@@ -4,7 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const PDFGenerator = require('./PDFGenerator');
 
-let port = 8056;
+let port = process.env.PORT || 8056;
 
 const randCharBase = "abcdefghijklmnopqrstuvwxyz0123456789"; 
 function randChars(count) {
@@ -71,4 +71,4 @@ let server = http.createServer( (req,res) => {
 		res.end("Only POST /pdfify is supported (you did "+req.method+" "+req.url+")");
 	}
 });
-server.listen(8056);
+server.listen(port);
