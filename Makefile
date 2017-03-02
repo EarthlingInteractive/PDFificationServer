@@ -18,7 +18,7 @@ run-tests: node_modules
 	npm test
 
 run-server: node_modules
-	npm start
+	node server.js
 
 docker-image-id: clean
 	docker build . | tee .docker-build.log
