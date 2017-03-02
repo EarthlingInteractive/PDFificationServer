@@ -87,14 +87,29 @@ function handlePdfifyGetRequest(req,res) {
 	let tempBase = "temp/"+randChars(20);
 	let tempOutputFile = tempBase+".pdf";
 	return new Promise( (resolve,reject) => {
+		let done = false;
+		// TODO: Abstract to some timeout.js or something
 		setTimeout( () => {
-			let msg = "PDFification of <"+inputUrl+"> with selector '"+waitForDomSelector+"' timed out";
-			console.error(msg)
-			reject(new Error(msg));
+			if( !done ) {
+				let msg = "PDFification of <"+inputUrl+"> with selector '"+waitForDomSelector+"' timed out";
+				console.error(msg)
+				reject(new Error(msg));
+				done = true;
+			}
 		}, 5000);
 		new PDFGenerator().convertFileToPdf(inputUrl, tempOutputFile, {
 			waitForDomSelector
-		}).then( resolve ).catch( reject );
+		}).then( (pdfFile) => {
+			if( !done ) {
+				resolve(pdfFile);
+				done = true;
+			}
+		}, (error) => {
+			if( !done ) {
+				reject(error);
+				done = true;
+			}
+		});
 	}).then( () => {
 		res.writeHead(200, {'Content-Type': 'application/pdf'});
 		return pipeFromFile(tempOutputFile, res).catch( (err) => {
