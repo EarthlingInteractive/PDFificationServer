@@ -77,7 +77,6 @@ function parseQueryString( qs ) {
 function handlePdfifyGetRequest(req,res) {
 	let m = /^([^\?]*)(?:\?(.*))?$/.exec(req.url);
 	let qsParams = parseQueryString(m[2]);
-	console.log(req.url, m[2], qsParams);
 	let inputUrl = qsParams['uri'];
 	if( inputUrl == undefined ) {
 		return Promise.reject(new Error("No 'uri' given"));
