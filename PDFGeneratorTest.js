@@ -20,7 +20,7 @@
 		return pdfGenerator.convertFileToPdf('./hello.html', './hello.pdf')
 	}).catch( (err) => {
 		console.error(err);
-		console.exitCode = 1;
+		process.exitCode = 1;
 	}).then( () => {
 		finished = true;
 	});
