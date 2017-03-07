@@ -108,6 +108,12 @@ function handlePdfifyGetRequest(req,res) {
 	});
 }
 
+if( process.env.DISPLAY == undefined || process.env.DISPLAY.length == 0 ) {
+	console.error("Error: DISPLAY environment variable isn't set; this won't work!");
+	process.exitCode = 1;
+	return;
+}
+
 let server = http.createServer( (req,res) => {
 	let m = /^([^\?]*)(?:\?.*)?$/.exec(req.url);
 	let path = m[1];
