@@ -6,6 +6,9 @@ const PDFGenerator = require('./PDFGenerator');
 
 let port = process.env.PORT || 8056;
 
+const defaultTimeout = 5000;
+const maxTimeout = 15000;
+
 const randCharBase = "abcdefghijklmnopqrstuvwxyz0123456789"; 
 function randChars(count) {
 	let str = "";
@@ -45,7 +48,9 @@ function handlePdfifyRequest(req,res) {
 	let tempOutputFile = tempBase+".pdf";
 	return pipeToFile(req, tempInputFile).then( () => {
 		console.log("Converting "+tempInputFile+" to "+tempOutputFile);
-		return new PDFGenerator().convertFileToPdf(tempInputFile, tempOutputFile);
+		return new PDFGenerator().convertFileToPdf(tempInputFile, tempOutputFile, {
+			timeout: defaultTimeout,
+		});
 	}).then( () => {
 		res.writeHead(200, {'Content-Type': 'application/pdf'});
 		return pipeFromFile(tempOutputFile, res).catch( (err) => {
@@ -78,6 +83,12 @@ function handlePdfifyGetRequest(req,res) {
 	let m = /^([^\?]*)(?:\?(.*))?$/.exec(req.url);
 	let qsParams = parseQueryString(m[2]);
 	let inputUrl = qsParams['uri'];
+	let timeout = defaultTimeout;
+	if( qsParams['timeout'] ) {
+		timeout = +qsParams['timeout']*1000;
+		if( timeout > maxTimeout ) timeout = maxTimeout;
+	}
+	
 	if( inputUrl == undefined ) {
 		return Promise.reject(new Error("No 'uri' given"));
 	}
@@ -85,30 +96,9 @@ function handlePdfifyGetRequest(req,res) {
 
 	let tempBase = "temp/"+randChars(20);
 	let tempOutputFile = tempBase+".pdf";
-	return new Promise( (resolve,reject) => {
-		let done = false;
-		// TODO: Abstract to some timeout.js or something
-		setTimeout( () => {
-			if( !done ) {
-				let msg = "PDFification of <"+inputUrl+"> with selector '"+waitForDomSelector+"' timed out";
-				console.error(msg)
-				reject(new Error(msg));
-				done = true;
-			}
-		}, 5000);
-		new PDFGenerator().convertFileToPdf(inputUrl, tempOutputFile, {
-			waitForDomSelector
-		}).then( (pdfFile) => {
-			if( !done ) {
-				resolve(pdfFile);
-				done = true;
-			}
-		}, (error) => {
-			if( !done ) {
-				reject(error);
-				done = true;
-			}
-		});
+	return new PDFGenerator().convertFileToPdf(inputUrl, tempOutputFile, {
+		waitForDomSelector,
+		timeout,
 	}).then( () => {
 		res.writeHead(200, {'Content-Type': 'application/pdf'});
 		return pipeFromFile(tempOutputFile, res).catch( (err) => {

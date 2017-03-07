@@ -1,6 +1,9 @@
 module.exports = (function() {
 "use strict";
 
+const fsu = require('./FSUtil');
+const timeout = require('./timeout');
+
 var PDFGenerator = function() {
 };
 PDFGenerator.prototype.makeNightmare = function( nightmareOptions ) {
@@ -49,10 +52,11 @@ PDFGenerator.prototype.assertNonEmptyFile = function( filename ) {
 		return Promise.reject(new Error(filename + " couldn't be statted, which probably means it doesn't exist"));
 	});
 };
+
 /**
  * @return promise(outputFile)
  */
-PDFGenerator.prototype.convertFileToPdf = function( htmlFilenameOrUrl, pdfFilename, options ) {
+PDFGenerator.prototype.convertFileToPdf = function( inputFilenameOrUrl, pdfFilename, options ) {
 	if( options == undefined ) options = {debugging:true};
 	let checkOutputFile = options.checkOutputFile == undefined ? true : !!options.checkOutputFile;
 	let waitForDomSelector = options.waitForDomSelector || 'body';
@@ -71,7 +75,9 @@ PDFGenerator.prototype.convertFileToPdf = function( htmlFilenameOrUrl, pdfFilena
 		return Promise.reject("You have to wait for some DOM selector.");
 	}
 	
-	return this.filenameOrUrlToUrl(htmlFilenameOrUrl).then( (htmlUrl) => {
+	let prom = fsu.mkParentDirs(pdfFilename).then( () => {
+		return this.filenameOrUrlToUrl(inputFilenameOrUrl);
+	}).then( (htmlUrl) => {
 		let nightmare = options.nightmare || this.makeNightmare(nightmareOptions);
 		
 		let prom = nightmare.goto(htmlUrl)
@@ -83,6 +89,13 @@ PDFGenerator.prototype.convertFileToPdf = function( htmlFilenameOrUrl, pdfFilena
 		}
 		return prom.then( () => pdfFilename );
 	});
+
+	if( options.timeout != undefined ) {
+		let resultDescription = "PDFification of <"+inputFilenameOrUrl+"> with selector '"+waitForDomSelector+"'";
+		prom = timeout(prom, +options.timeout, resultDescription);
+	}
+
+	return prom;
 };
 
 PDFGenerator.default = PDFGenerator; // For ES6 module compatibility!
