@@ -4,8 +4,8 @@ RUN apk add --update nodejs
 
 RUN npm install
 
-ADD package.json *.js ./
+ADD package.json *.js node_modules ./
 
 CMD mkdir -p temp
 
-ENTRYPOINT node server.js
+ENTRYPOINT xvfb-run -a node server.js
