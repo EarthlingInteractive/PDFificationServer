@@ -1,6 +1,8 @@
 FROM alpine
 
-RUN apk add --update nodejs
+RUN apk add --update \
+    nodejs \
+    xfvb
 
 ADD package.json *.js /opt/src/
 
