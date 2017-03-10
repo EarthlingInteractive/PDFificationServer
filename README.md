@@ -31,3 +31,7 @@ Then go to http://127.0.0.1:8058/pdfify?....
 In this example, 8056 is the server port as it appears inside the docker container,
 and 127.0.0.1:8058 is the port we want to bind to on the host machine
 so that we can use the service.
+
+## Debugging on staging
+
+```ssh ubuntu@app-test.earthlinginteractive.com docker logs pdfification-test```
