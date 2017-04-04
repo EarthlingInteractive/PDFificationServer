@@ -7,12 +7,15 @@ docker_image_id = $(shell cat docker-image-id)
 	docker-image-id
 .PHONY: \
 	clean \
-	run-tests \
+	docker-image \
 	run-server \
-	docker-image
+	run-server-in-docker
+	run-tests \
+	run-tests-in-docker \
+	run-web-tests
 
 clean:
-	rm -rf node_modules hello.pdf
+	rm -rf node_modules docker-image-id temp/*
 
 node_modules: package.json
 	npm install
@@ -35,3 +38,10 @@ run-server-in-docker: docker-image-id
 
 run-tests-in-docker: docker-image-id
 	docker run ${docker_image_id} npm test
+
+# Run this after you have started the server
+# either locally or in a docker container with :8056 published
+run-web-tests:
+	mkdir -p temp
+	curl -f -X POST -H 'Content-Type: text/html' --data-binary @test-data/hello.html http://localhost:8056/pdfify -o temp/hello.pdf
+	curl -f 'http://localhost:8056/pdfify?uri=http://www.nuke24.net/' -o temp/nuke24.pdf
