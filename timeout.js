@@ -15,8 +15,7 @@ module.exports = function(promise, time, waitingForDescription) {
 				clearTimeout(timeoutHandle);
 				done = true;
 			}
-		});
-		promise.catch( (err) => {
+		}, (err) => {
 			if( !done ) {
 				reject(err);
 				clearTimeout(timeoutHandle);
