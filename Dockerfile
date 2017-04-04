@@ -7,9 +7,10 @@ FROM node:slim
 RUN apt-get update
 RUN apt-get -y install libgtkextra-dev libgconf2-dev libnss3 libasound2 libxtst-dev libxss1 xvfb
 
-ADD package.json *.js /opt/src/
+COPY package.json *.js /opt/PDFificationServer/
+COPY test-data/ /opt/PDFificationServer/test-data/
 
-WORKDIR /opt/src
+WORKDIR /opt/PDFificationServer
 
 RUN npm install
 

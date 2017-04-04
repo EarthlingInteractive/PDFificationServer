@@ -12,12 +12,12 @@
 			process.exitCode = 1;
 		}
 	});
-
+	
 	new Promise( (resolve,reject) => {
 		// Attempt to unlink hello.pdf and don't mind error.
-		require('fs').unlink( './hello.pdf', (err) => { resolve(); });
+		require('fs').unlink( './temp/hello.pdf', (err) => { resolve(); });
 	}).then( () => {
-		return pdfGenerator.convertFileToPdf('./hello.html', './hello.pdf')
+		return pdfGenerator.convertFileToPdf('./test-data/hello.html', './temp/hello.pdf')
 	}).catch( (err) => {
 		console.error(err);
 		process.exitCode = 1;
