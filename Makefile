@@ -31,7 +31,7 @@ docker-image-id: Dockerfile package.json *.js test-data/*
 docker-image: docker-image-id
 
 run-server-in-docker: docker-image-id
-	docker run ${docker_image_id}
+	docker run -p 127.0.0.1:8056:8056 ${docker_image_id}
 
 run-tests-in-docker: docker-image-id
 	docker run ${docker_image_id} npm test
