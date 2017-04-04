@@ -42,7 +42,7 @@ function pipeFromFile( file, stream ) {
 	return pipe( readStream, stream );
 }
 
-function handlePdfifyRequest(req,res) {
+function handlePdfifyRequest(req) {
 	let tempBase = "temp/"+randChars(20);
 	let tempInputFile = tempBase+".html";
 	let tempOutputFile = tempBase+".pdf";
@@ -51,13 +51,15 @@ function handlePdfifyRequest(req,res) {
 		return new PDFGenerator().convertFileToPdf(tempInputFile, tempOutputFile, {
 			timeout: defaultTimeout,
 		});
-	}).then( () => {
-		res.writeHead(200, {'Content-Type': 'application/pdf'});
-		return pipeFromFile(tempOutputFile, res).catch( (err) => {
-			console.error("Error while piping "+tempOutputFile+" back to client");
-			console.error(err.stack);
-		});
-	});
+	}).then( () => ({
+		send: (res) => {
+			res.writeHead(200, {'Content-Type': 'application/pdf'});
+			return pipeFromFile(tempOutputFile, res).catch( (err) => {
+				console.error("Error while piping "+tempOutputFile+" back to client");
+				console.error(err.stack);
+			});
+		}
+	}));
 }
 
 function decodeUriComponentBetter( c ) {
@@ -79,7 +81,7 @@ function parseQueryString( qs ) {
 	return data;
 }
 
-function handlePdfifyGetRequest(req,res) {
+function handlePdfifyGetRequest(req) {
 	let m = /^([^\?]*)(?:\?(.*))?$/.exec(req.url);
 	let qsParams = parseQueryString(m[2]);
 	let inputUrl = qsParams['uri'];
@@ -99,13 +101,15 @@ function handlePdfifyGetRequest(req,res) {
 	return new PDFGenerator().convertFileToPdf(inputUrl, tempOutputFile, {
 		waitForDomSelector,
 		timeout,
-	}).then( () => {
-		res.writeHead(200, {'Content-Type': 'application/pdf'});
-		return pipeFromFile(tempOutputFile, res).catch( (err) => {
-			console.error("Error while piping "+tempOutputFile+" back to client");
-			console.error(err.stack);
-		});
-	});
+	}).then( () => ({
+		send: (res) => {
+			res.writeHead(200, {'Content-Type': 'application/pdf'});
+			return pipeFromFile(tempOutputFile, res).catch( (err) => {
+				console.error("Error while piping "+tempOutputFile+" back to client");
+				console.error(err.stack);
+			});
+		}
+	}));
 }
 
 if( process.env.DISPLAY == undefined || process.env.DISPLAY.length == 0 ) {
@@ -114,33 +118,36 @@ if( process.env.DISPLAY == undefined || process.env.DISPLAY.length == 0 ) {
 	return;
 }
 
-let server = http.createServer( (req,res) => {
+function handleRequest( req ) {
 	let m = /^([^\?]*)(?:\?.*)?$/.exec(req.url);
 	let path = m[1];
+	
 	if( req.method == 'GET' && path == '/pdfify' ) {
-		handlePdfifyGetRequest(req,res).catch( (err) => {
-			console.error("Request to "+req.method+" "+req.url+" failed; sending 500: "+err.stack+"");
-			res.writeHead(500, {'Content-Type': 'text/plain'});
-			res.end(err.stack);
-		}).then( () => {
-			res.end(); // Make sure!
-		}).catch( (err) => {
-			console.error("Error sending response? "+err.stack);
-		});
+		return handlePdfifyGetRequest(req);
 	} else if( req.method == 'POST' && req.url == '/pdfify' ) {
-		handlePdfifyRequest(req,res).catch( (err) => {
-			console.error("Request to "+req.method+" "+req.url+" failed; sending 500: "+err.stack+"");
-			res.writeHead(500, {'Content-Type': 'text/plain'});
-			res.end(err.stack);
-		}).then( () => {
-			res.end(); // Make sure!
-		}).catch( (err) => {
-			console.error("Error sending response? "+err.stack);
-		})
+		return handlePdfifyRequest(req);
 	} else {
-		res.writeHead(404, {'Content-Type': 'text/plain'});
-		res.end("Only POST /pdfify is supported (you did "+req.method+" "+req.url+")");
+		return Promise.resolve({
+			send: (res) => {
+				res.writeHead(404, {'Content-Type': 'text/plain'});
+				res.end("Only POST /pdfify is supported (you did "+req.method+" "+req.url+")");
+				return Promise.resolve();
+			}
+		});
 	}
+}
+
+let server = http.createServer( (req,res) => {
+	handleRequest(req).then( (responder) => {
+		return responder.send(res).catch( (err) => {
+			console.error("Error sending response? "+err.stack);
+			res.end();
+		});
+	}, (err) => {
+		console.error("Request to "+req.method+" "+req.url+" failed; sending 500: "+err.stack+"");
+		res.writeHead(500, {'Content-Type': 'text/plain'});
+		res.end(err.stack);
+	});
 });
 server.listen( port, () => {
 	console.log(`PDFification web server listening on port ${port}`);
